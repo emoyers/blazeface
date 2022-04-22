@@ -209,6 +209,7 @@ def _resize_subtract_mean(image, insize, rgb_mean):
     image = image.astype(np.float32)
     image -= rgb_mean
     return image.transpose(2, 0, 1)
+    return image
 
 
 class preproc(object):
@@ -240,3 +241,4 @@ class preproc(object):
         targets_t = np.hstack((boxes_t, landm_t, labels_t))
 
         return image_t, targets_t
+        # return image_t, targets_t, (width, height)

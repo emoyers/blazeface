@@ -118,9 +118,17 @@ def match(threshold, truths, priors, variances, labels, landms, loc_t, conf_t, l
         truths,
         point_form(priors)
     )
+    # print(priors*320)
+    # print(point_form(priors)*320)
+    # exit(0)
     # (Bipartite Matching)
     # [1,num_objects] best prior for each ground truth
     best_prior_overlap, best_prior_idx = overlaps.max(1, keepdim=True)
+    # print(truths.shape)
+    # print(overlaps.shape)
+    # print(best_prior_overlap.shape)
+    # print("best prior idx: ",best_prior_idx.shape)
+    # print("------------------")
 
     # ignore hard gt
     valid_gt_idx = best_prior_overlap[:, 0] >= 0.2
