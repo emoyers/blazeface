@@ -118,19 +118,12 @@ def match(threshold, truths, priors, variances, labels, landms, loc_t, conf_t, l
         truths,
         point_form(priors)
     )
-    # print(priors*320)
-    # print(point_form(priors)*320)
-    # exit(0)
+
     # (Bipartite Matching)
     # [1,num_objects] best prior for each ground truth
     best_prior_overlap, best_prior_idx = overlaps.max(1, keepdim=True)
-    # print(truths.shape)
-    # print(overlaps.shape)
-    # print(best_prior_overlap.shape)
-    # print("best prior idx: ",best_prior_idx.shape)
-    # print("------------------")
 
-    # ignore hard gt
+    # ignoring matches lower the 0.2 jaccard
     valid_gt_idx = best_prior_overlap[:, 0] >= 0.2
     best_prior_idx_filter = best_prior_idx[valid_gt_idx, :]
     if best_prior_idx_filter.shape[0] <= 0:
@@ -140,21 +133,28 @@ def match(threshold, truths, priors, variances, labels, landms, loc_t, conf_t, l
 
     # [1,num_priors] best ground truth for each prior
     best_truth_overlap, best_truth_idx = overlaps.max(0, keepdim=True)
+
+    # Squeezing tensors
     best_truth_idx.squeeze_(0)
     best_truth_overlap.squeeze_(0)
     best_prior_idx.squeeze_(1)
     best_prior_idx_filter.squeeze_(1)
     best_prior_overlap.squeeze_(1)
-    best_truth_overlap.index_fill_(0, best_prior_idx_filter, 2)  # ensure best prior
+
+    # ensure best prior for each ground truth is greater than threshold in best_truth_overlap
+    best_truth_overlap.index_fill_(0, best_prior_idx_filter, 2)
     # TODO refactor: index  best_prior_idx with long tensor
-    # ensure every gt matches with its prior of max overlap
+    # ensure every ground truth matches with its prior of max overlap
     for j in range(best_prior_idx.size(0)):     # 判别此anchor是预测哪一个boxes
         best_truth_idx[best_prior_idx[j]] = j
+
+    # Extracting ground truth and labels based in the best_truth_index
     matches = truths[best_truth_idx]            # Shape: [num_priors,4] 此处为每一个anchor对应的bbox取出来
     conf = labels[best_truth_idx]               # Shape: [num_priors]      此处为每一个anchor对应的label取出来
     conf[best_truth_overlap < threshold] = 0    # label as background   overlap<0.35的全部作为负样本
     loc = encode(matches, priors, variances)
 
+    # Extracting ground truth and labels based in the best_truth_index
     matches_landm = landms[best_truth_idx]
     landm = encode_landm(matches_landm, priors, variances)
     loc_t[idx] = loc    # [num_priors,4] encoded offsets to learn
